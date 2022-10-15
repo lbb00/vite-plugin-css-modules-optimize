@@ -64,16 +64,16 @@ const blue = computed(() => {
 </script>
 
 <style lang="scss" module>
-._a {
+.a {
   color: red;
 }
-._b {
+.b {
   color: yellow;
 }
-._c {
+.c {
   color: blue;
 }
-._d {
+.d {
   font-size: 14px;
 }
 </style>

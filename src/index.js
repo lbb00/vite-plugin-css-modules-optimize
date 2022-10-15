@@ -14,7 +14,7 @@ export default function UniCssModule() {
       return name
     },
     transform(code, id) {
-      if (id.endsWith('/index.vue')) {
+      if (id.endsWith('.vue')) {
         // 直接用gogocode和正则谁更快？
         const styleModule = code.match(/\<style.*module.*\>([\s\S]*)<\/style\>/)
         const classNames = []
