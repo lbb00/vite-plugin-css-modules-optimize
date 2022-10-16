@@ -2,25 +2,42 @@ import $ from 'gogocode'
 import postcss from 'postcss'
 import base62 from 'base62'
 
-const CSS_PREFIX = '_'
+const PRE_SCOPED_NAME_PREFIX = '_'
 
-export default function UniCssModule() {
+function getPreGenarateScopedNameDefault() {
+  let count = 9
+  return (rule, filename) => {
+    count = count + 1
+    return base62.encode(count)
+  }
+}
+
+export default function getCssModuleOptimizePlugin({
+  preScopedNamePrefix = PRE_SCOPED_NAME_PREFIX,
+  preGenarateScopedName = getPreGenarateScopedNameDefault(),
+} = {}) {
   return {
     name: 'css-module-optimize',
     generateScopedName(name) {
-      if (name.startsWith(CSS_PREFIX)) {
-        return name.replace(CSS_PREFIX, '')
+      if (name.startsWith(preScopedNamePrefix)) {
+        return name.replace(preScopedNamePrefix, '')
       }
       return name
     },
     transform(code, id) {
       if (id.endsWith('.vue')) {
         // 直接用gogocode和正则谁更快？
-        const styleModule = code.match(/\<style.*module.*\>([\s\S]*)<\/style\>/)
+        const hasCssModule = /\<style.*module/.test(code)
         const classNames = []
 
-        if (styleModule) {
-          const cssAst = postcss.parse(styleModule[1])
+        if (hasCssModule) {
+          const ast = $(code, {
+            parseOptions: {
+              language: 'vue',
+            },
+          })
+
+          const cssAst = postcss.parse(ast.rootNode.node.styles[0].content)
           cssAst.walkRules((rule) => {
             rule.selectors = rule.selectors.map((name) => {
               if (!name.startsWith('.')) {
@@ -35,17 +52,11 @@ export default function UniCssModule() {
 
               const item = {
                 name,
-                value: base62.encode(classNames.length + 10),
+                value: preGenarateScopedName(name, id),
               }
               classNames.push(item)
-              return `.${CSS_PREFIX}${item.value}`
+              return `.${preScopedNamePrefix}${item.value}`
             })
-          })
-
-          const ast = $(code, {
-            parseOptions: {
-              language: 'vue',
-            },
           })
           let script = ast.find('<script></script>')
           if (script.length === 0) {
@@ -61,7 +72,7 @@ export default function UniCssModule() {
                     if (classname.name === `.${i.match[0][0].value}`) {
                       classname.used = true
                       i.replaceBy(
-                        `${cssModuleVarName}.${CSS_PREFIX}${classname.value}`
+                        `${cssModuleVarName}.${preScopedNamePrefix}${classname.value}`
                       )
                       return true
                     }
@@ -131,7 +142,7 @@ export default function UniCssModule() {
                 !classNames.find(
                   (classname) =>
                     classname.used &&
-                    `.${CSS_PREFIX}${classname.value}` === selector
+                    `.${preScopedNamePrefix}${classname.value}` === selector
                 )
               )
             })
@@ -141,7 +152,7 @@ export default function UniCssModule() {
           })
 
           ast.rootNode.node.styles[0].content = cssAst.toString()
-          return ast.generate()
+          code = ast.generate()
         }
         return code
       }
