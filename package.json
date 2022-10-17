@@ -1,22 +1,31 @@
 {
-  "name": "vite-plugin-css-module-optimize",
-  "version": "0.0.3",
-  "description": "",
-  "main": "dist/index.umd.js",
-  "module": "dis/index.mjs",
+  "name": "vite-plugin-css-modules-optimize",
+  "version": "0.1.0",
+  "description": "A css modules optimization plugin for vue",
+  "main": "dist/main.js",
   "scripts": {
-    "build": "vite build"
+    "build": "rollup -c"
   },
   "files": [
     "dist"
   ],
-  "author": "",
-  "license": "MIT",
-  "devDependencies": {
+  "license": "UNLICENSE (HTTP://UNLICENSE.ORG/)",
+  "keywords": [
+    "css modules",
+    "vite",
+    "uniapp"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lbb00/vite-plugin-css-modules-optimize.git"
+  },
+  "dependencies": {
     "base62": "^2.0.1",
     "gogocode": "^1.0.55",
     "postcss": "^8.4.18",
-    "prettier": "^2.7.1",
-    "vite": "^3.1.8"
+    "postcss-modules": "^5.0.0"
+  },
+  "devDependencies": {
+    "rollup": "^3.2.2"
   }
 }

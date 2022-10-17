@@ -1,120 +1,124 @@
-# vite-plugin-css-module-optimize
+# vite-plugin-css-modules-optimize
 
-!> Currently in testing stage, do not use in production.
+!> Currently in testing stage, only the use of `<style module>` in VUE SFC files is supported. Be careful when using in production, api may be changed!!!
 
-A css module optimization plugin for vue.
+> A css modules optimization plugin for vue.
 
 - Deleted unused css code.
-- Use the shorter base62 as the class name by default(Support custom).
+- Convert the variables in SFC template to string.
+- Compatible with the postcss-modules configuration in vite.config.js(css.modules).
+
+_Unsupported `postcss-modules` configuration:_
+
+- localsConvention
+- globalModulePaths
+
+## How it works?
+
+This plugin need to work before the VUE plugin, it will syntax analysis and conversion of VUE SFC files that use CSS modules by GoGoCode and PostCSS.
 
 ## Usage
 
 ### install
 
 ```bash
-npm install -D vite-plugin-css-module-optimize
+npm install -D vite-plugin-css-modules-optimize
 ```
-
-### For Vue
 
 ```javascript
 // vite.config.js
 import { defineConfig } from 'vite'
-import getCssModuleOptimizePlugin from 'vite-plugin-css-module-optimize'
+import vue from '@vitejs/plugin-vue'
+import cssModulesOptimize from 'vite-plugin-css-modules-optimize'
 
-// getCssModuleOptimizePlugin params : { preScopedNamePrefix, preGenarateScopedName }
-// - preScopedNamePrefix   Optional, default is '_'
-// - preGenarateScopedName Optional, custom scoped name
-
-const cssModuleOptimize = getCssModuleOptimizePlugin()
 export default defineConfig({
-  css: {
-    modules: {
-      generateScopedName: cssModuleOptimize.generateScopedName,
-    },
-  },
-  plugins: [cssModuleOptimize, vue()],
+  plugins: [cssModulesOptimize(), vue()],
 })
 ```
 
-### For Uniapp mp-weixin
+### generateScopedName helpers
+
+#### `generateScopedNameBase62Global` (For VUE)
+
+```javascript
+// vite.config.js
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import cssModulesOptimize, {
+  generateScopedNameBase62Global,
+} from 'vite-plugin-css-modules-optimize'
+
+export default defineConfig({
+  css: {
+    modules: {
+      generateScopedName: generateScopedNameBase62Global,
+    },
+  },
+  plugins: [cssModulesOptimize(), vue()],
+})
+```
+
+#### generateScopedNameBase62Uniapp (For Uniapp mp-weixin)
 
 由于微信小程序默认样式规则只有当前页面样式会影响到当前页面引用的组件，组件间、父子组件默认是隔离的。
 
-所以可以采用页面级组件样式增加一个前缀（示例里加的是`_`，可以自定义），其余组件都从 base62 `a` 开始生成样式名，达到最优的优化。
+所以采用页面级组件样式增加一个前缀`_`，其余组件都从 base62 `a` 开始生成样式名，以达到体积最小化。
 
 ```javascript
 // vite.config.js
 import { defineConfig } from 'vite'
 import uni from '@dcloudio/vite-plugin-uni'
-import base62 from 'base62'
-import fs from 'fs'
 
-import getCssModuleOptimizePlugin from 'vite-plugin-css-module-optimize'
-
-const cssModuleOptimize = getCssModuleOptimizePlugin({
-  preGenarateScopedName: (() => {
-    const fMap = {}
-    const pagesJson = JSON.parse(fs.readFileSync('./src/pages.json'))
-    const pages = [
-      ...pagesJson.pages.map((i) => i.path),
-      ...(pagesJson.subPackages
-        ?.map((i) => i.pages.map((j) => `${i.root}/${j.path}`))
-        ?.flat() || []),
-    ]
-
-    function isPage(path) {
-      return pages.find((i) =>
-        path.startsWith(__dirname + '/src/' + i + '.vue')
-      )
-    }
-
-    return (name, filename) => {
-      if (!fMap[filename]) {
-        fMap[filename] = 10
-      }
-      return `${isPage(filename) ? '_' : ''}${base62.encode(fMap[filename]++)}`
-    }
-  })(),
-})
+import cssModulesOptimize, {
+  generateScopedNameBase62Uniapp,
+} from 'vite-plugin-css-modules-optimize'
 
 export default defineConfig({
   css: {
     modules: {
-      generateScopedName: cssModuleOptimize.generateScopedName,
+      generateScopedName: generateScopedNameBase62Uniapp,
     },
   },
-  plugins: [cssModuleOptimize, uni()],
+  plugins: [cssModulesOptimize(), uni()],
 })
 ```
 
 ## Example
 
-Source code :
+[Click here to online demo](https://codesandbox.io/s/vite-css-modules-optimize-xguhbu?file=/src/App.vue)
+
+Source code:
 
 ```vue
 <template>
-  <view :class="$style.red">red</view>
-  <view :class="[$style.yellow, 'foo']">yellow</view>
-  <view :class="blue">blue</view>
+  <view :class="$style.red">color red, background black</view>
+  <view :class="[$style1.yellow, 'foo']">color yellow, background black</view>
+  <view :class="blue">color blue, fz14</view>
+  <view :class="[$styleB.bar]">nothing</view>
 </template>
 
 <script setup>
 import { useCssModule, computed } from 'vue'
 const $style = useCssModule()
-
+const $style1 = useCssModule()
+const $styleA = useCssModule('a')
+const $styleB = useCssModule('b')
 const blue = computed(() => {
-  return [$style.blue, $style.fz14]
+  return [$styleA.blue, $style.fz14]
 })
 </script>
 
-<style module lang="scss">
+<style>
+.foo {
+  background: #000;
+}
+</style>
+
+<style module>
 .red {
   color: red;
 }
-.yellow {
-  color: yellow;
-}
+
 .blue {
   color: blue;
 }
@@ -122,80 +126,108 @@ const blue = computed(() => {
   font-size: 14px;
 }
 .fz16 {
-  // unused, will be deleted
+  /* unused, will be deleted */
   font-size: 16px;
 }
 </style>
+
+<style module>
+.bg-black {
+  background: #000;
+}
+.red {
+  composes: bg-black;
+}
+.yellow {
+  color: yellow;
+}
+</style>
+
+<style module="a">
+.blue {
+  color: blue;
+}
+</style>
+
+</style>
+
+<style module>
+.bg-black {
+  background: #000;
+}
+.red {
+  composes: bg-black;
+}
+.yellow {
+  color: yellow;
+}
+</style>
+
+<style module="a">
+.blue {
+  color: blue;
+}
+</style>
+
 ```
 
 Will be converted to:
 
 ```vue
 <template>
-  <view class="a">red</view>
-  <view class="b foo">yellow</view>
-  <view :class="blue">blue</view>
+  <view class="_a _f _e">color red, background black</view>
+  <view class="_g foo">color yellow, background black</view>
+  <view :class="blue">color blue, fz14</view>
+  <view :class="[$styleB.bar]">nothing</view>
 </template>
 
 <script setup>
 import { useCssModule, computed } from 'vue'
-const $style = useCssModule()
-
+const $style = { fz14: '_c' }
+const $style1 = {}
+const $styleA = { blue: '_h' }
+const $styleB = useCssModule('b')
 const blue = computed(() => {
-  return [$style._c, $style._d]
+  return [$styleA.blue, $style.fz14]
 })
 </script>
 
-<style lang="scss" module>
-// '_' is `preScopedNamePrefix` default config
+<style>
+.foo {
+  background: #000;
+}
+</style>
+
+<style>
 ._a {
   color: red;
 }
+
 ._b {
-  color: yellow;
+  color: blue;
 }
 ._c {
-  color: blue;
+  font-size: 14px;
 }
 ._d {
-  font-size: 14px;
+  font-size: 16px;
 }
 </style>
-```
 
-The end, `generateScopedName` function will remove the `preScopedNamePrefix`, like:
-
-```vue
-<template>
-  <view class="a">red</view>
-  <view class="b foo">yellow</view>
-  <view :class="blue">blue</view>
-</template>
-
-<script setup>
-import { useCssModule, computed } from 'vue'
-const $style = {
-  _c: 'c',
-  _d: 'd',
+<style>
+._e {
+  background: #000;
 }
-
-const blue = computed(() => {
-  return [$style._c, $style._d]
-})
-</script>
-
-<style lang="scss" module>
-.a {
-  color: red;
+._f {
 }
-.b {
+._g {
   color: yellow;
 }
-.c {
+</style>
+
+<style>
+._h {
   color: blue;
-}
-.d {
-  font-size: 14px;
 }
 </style>
 ```
