@@ -1,13 +1,15 @@
 {
   "name": "vite-plugin-css-modules-optimize",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A css modules optimization plugin for vue",
   "main": "dist/main.js",
+  "module": "src/main.js",
   "scripts": {
     "build": "rollup -c"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "license": "UNLICENSE (HTTP://UNLICENSE.ORG/)",
   "keywords": [

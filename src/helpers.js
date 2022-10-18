@@ -1,4 +1,4 @@
-import fs from 'node:fs'
+import fs from 'fs'
 import base62 from 'base62'
 
 export const generateScopedNameBase62Global = (() => {

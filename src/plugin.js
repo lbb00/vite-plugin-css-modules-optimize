@@ -59,42 +59,16 @@ export function cssModulesOptimizePlugin() {
             script = ast.find('<script setup></script>')
           }
 
-          script.find(`const $_$0 = useCssModule()`).each((i) => {
-            const cssModuleVarName = i.match[0][0].value
-            const cssModuleName =
-              i.find(`useCssModule($_$0)`).match[0]?.[0].value
-            const idxArr = Object.keys(classNamesMap).filter(
-              (i) => classNamesMap[i].moduleNames === cssModuleName
-            )
-            if (idxArr.length === 0) {
-              return
-            }
-
-            // script
-            const styles = {}
-            i.parent()
-              .find(`${cssModuleVarName}.$_$`)
-              .each((i) => {
-                const classname = i.match[0][0].value
-                let values = []
-                idxArr.forEach((idx) => {
-                  const item = classNamesMap[idx].map[classname]
-                  if (item) {
-                    item.used = true
-                    values.push(item.value)
-                  }
-                })
-                styles[classname] = values.join(' ')
-              })
-            i.replaceBy(`const ${cssModuleVarName} = ${JSON.stringify(styles)}`)
-
-            // template
-            // todo: 优化性能，对于optional的vue script，只处理setup()中return的style
+          function replaceTemplate(cssModuleVarName, idxArr) {
             ast
               .find(`<template></template>`)
-              .find(`<$_$ :class="$_$1" $$$1>$$$2</$_$>`)
-              .each((node) => {
-                const newContent = $(node.match[1][0].value)
+              .find([
+                `<$_$ :class="$_$1" $$$1>$$$2</$_$>`,
+                `<$_$ :class="$_$1" $$$1/>`,
+              ])
+              .each((item) => {
+                const newContentAst = $(item.match[1][0].value)
+                newContentAst
                   .find(`${cssModuleVarName}.$_$`)
                   .each((n) => {
                     const classname = n.match[0][0].value
@@ -112,15 +86,10 @@ export function cssModulesOptimizePlugin() {
                     }
                   })
                   .root()
-                  // 字符串全部替换为双引号
-                  .find(`"$_$"`)
-                  .each((n) => {
-                    n.replaceBy(`'${n.match[0][0].value}'`)
-                  })
-                  // 字符串数组格式化为字符串
-                  .root()
-                  .find(`[$_$]`)
-                  .each((n) => {
+                  .replace(`"$_$"`, `"$_$"`)
+
+                if (newContentAst.generate().startsWith('[')) {
+                  newContentAst.find(`[$_$]`).each((n) => {
                     if (
                       n.match[0].every((i) => {
                         return i.node.type === 'StringLiteral'
@@ -131,22 +100,71 @@ export function cssModulesOptimizePlugin() {
                       )
                     }
                   })
-                  // todo: {["foo"]: true} 改为 {"foo": true}
-                  .root()
-                  .generate()
+                }
+                const newContent = newContentAst.generate()
+
                 if (newContent.startsWith('"')) {
-                  node.replace(
-                    `<$_$ :class="$_$1" $$$1>$$$2</$_$>`,
-                    `<$_$ class=${newContent} $$$1>$$$2</$_$>`
+                  item.node.content.attributes.find((i) => {
+                    if (i.key.content === ':class') {
+                      i.key.content = 'class'
+                    }
+                  })
+                  item.match[1][0].node.content = newContent.replace(
+                    /(^")|("$)/g,
+                    ''
                   )
                 } else {
-                  node.replace(
-                    `<$_$ :class="$_$1" $$$1>$$$2</$_$>`,
-                    `<$_$ :class='${newContent}' $$$1>$$$2</$_$>`
-                  )
+                  item.node.content.attributes.find((i) => {
+                    if (i.key.content === ':class') {
+                      i.startWrapper.content = "'"
+                      i.endWrapper.content = "'"
+                    }
+                  })
+                  item.match[1][0].node.content = newContent
                 }
               })
-          })
+          }
+
+          const cssModuleVarDecles = script.find(`const $_$0 = useCssModule()`)
+          if (cssModuleVarDecles.length > 0) {
+            cssModuleVarDecles.each((i) => {
+              const cssModuleVarName = i.match[0][0].value
+              const cssModuleName =
+                i.find(`useCssModule($_$0)`).match[0]?.[0].value
+              const idxArr = Object.keys(classNamesMap).filter(
+                (i) => classNamesMap[i].moduleNames === cssModuleName
+              )
+              if (idxArr.length === 0) {
+                return
+              }
+              // script
+              const styles = {}
+              i.parent()
+                .find(`${cssModuleVarName}.$_$`)
+                .each((i) => {
+                  const classname = i.match[0][0].value
+                  let values = []
+                  idxArr.forEach((idx) => {
+                    const item = classNamesMap[idx].map[classname]
+                    if (item) {
+                      item.used = true
+                      values.push(item.value)
+                    }
+                  })
+                  styles[classname] = values.join(' ')
+                })
+              i.replaceBy(
+                `const ${cssModuleVarName} = ${JSON.stringify(styles)}`
+              )
+
+              replaceTemplate(cssModuleVarName, idxArr)
+            })
+          } else if (!script.find(`{setup(){ $$$1 },$$$2}`).match['$$$1']) {
+            // optional api
+            const cssModuleVarName = '$style'
+            // todo: script
+            replaceTemplate(cssModuleVarName, [0])
+          }
 
           ast.rootNode.node.styles.forEach((i, idx) => {
             if (i.attrs.module) {
@@ -167,14 +185,7 @@ export function cssModulesOptimizePlugin() {
                 }
               })
 
-              // remove module attrs
-              i.attrs = Object.keys(i.attrs || {}).reduce((acc, key) => {
-                if (key !== 'module') {
-                  acc[key] = i.attrs[key]
-                }
-                return acc
-              }, {})
-
+              delete i.attrs.module
               i.content = cssAst.toString()
             }
           })
