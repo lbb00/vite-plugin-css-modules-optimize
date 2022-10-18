@@ -1,8 +1,14 @@
 # vite-plugin-css-modules-optimize
 
+[![Npm](https://badgen.net/npm/v/vite-plugin-css-modules-optimize)](https://www.npmjs.com/package/vite-plugin-css-modules-optimize)
+[![License](https://img.shields.io/github/license/lbb00/vite-plugin-css-modules-optimize.svg)](https://github.com/lbb00/vite-plugin-css-modules-optimize/blob/master/LICENSE)
+[![License](https://img.shields.io/npm/dt/vite-plugin-css-modules-optimize.svg)](https://www.npmjs.com/package/vite-plugin-css-modules-optimize)
+
 !> Currently in testing stage, only the use of `<style module>` in VUE SFC files is supported. Be careful when using in production, api may be changed!!!
 
 > A css modules optimization plugin for vue.
+
+[Click here to online demo](https://codesandbox.io/s/vite-css-modules-optimize-xguhbu?file=/src/App.vue)
 
 - Deleted unused css code.
 - Convert the variables in SFC template to string.
@@ -84,8 +90,6 @@ export default defineConfig({
 ```
 
 ## Example
-
-[Click here to online demo](https://codesandbox.io/s/vite-css-modules-optimize-xguhbu?file=/src/App.vue)
 
 Source code:
 
