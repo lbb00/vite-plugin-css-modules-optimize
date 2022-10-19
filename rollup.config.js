@@ -4,5 +4,12 @@ module.exports = {
     file: 'dist/main.js',
     format: 'cjs',
   },
-  external: ['fs', 'gogocode', 'postcss', 'postcss-modules', 'base62'],
+  external: [
+    'node:fs',
+    'node:process',
+    'gogocode',
+    'postcss',
+    'postcss-modules',
+    'base62',
+  ],
 }

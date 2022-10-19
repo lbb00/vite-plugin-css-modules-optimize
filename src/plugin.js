@@ -1,17 +1,18 @@
 import $ from 'gogocode'
 import postcss from 'postcss'
 import postcssModules from 'postcss-modules'
+import selectorParser from 'postcss-selector-parser'
+
 export function cssModulesOptimizePlugin() {
   let cssModulesConfig = {}
   return {
     name: 'css-modules-optimize',
-    config(config, { command }) {
+    config(config) {
       cssModulesConfig = config.css?.modules || {}
     },
     async transform(code, id) {
       if (id.endsWith('.vue')) {
-        // 直接用gogocode和正则谁更快？
-        const hasCssModule = /\<style.*module/.test(code)
+        const hasCssModule = /<style.*module/.test(code)
         const classNamesMap = {}
 
         if (hasCssModule) {
@@ -114,13 +115,7 @@ export function cssModulesOptimizePlugin() {
                     ''
                   )
                 } else {
-                  item.node.content.attributes.find((i) => {
-                    if (i.key.content === ':class') {
-                      i.startWrapper.content = "'"
-                      i.endWrapper.content = "'"
-                    }
-                  })
-                  item.match[1][0].node.content = newContent
+                  item.match[1][0].node.content = newContent.replace(/"/g, "'")
                 }
               })
           }
@@ -163,23 +158,41 @@ export function cssModulesOptimizePlugin() {
             // optional api
             const cssModuleVarName = '$style'
             // todo: script
-            replaceTemplate(cssModuleVarName, [0])
+            replaceTemplate(
+              cssModuleVarName,
+              Object.keys(classNamesMap).filter(
+                (i) => classNamesMap[i].moduleNames === undefined
+              )
+            )
           }
 
           ast.rootNode.node.styles.forEach((i, idx) => {
+            const usedClassNamesMap = Object.keys(
+              classNamesMap[idx].map
+            ).reduce((acc, i) => {
+              const { used, value } = classNamesMap[idx].map[i]
+              if (used) {
+                acc[value] = true
+              }
+              return acc
+            }, {})
             if (i.attrs.module) {
               // remove unused class
               const cssAst = postcss.parse(i.content)
               cssAst.walkRules((rule) => {
-                const reserved = rule.selectors.some((selector) => {
-                  const map = classNamesMap[idx].map
-                  return (
-                    !selector.startsWith('.') ||
-                    Object.keys(map).find((i) =>
-                      map[i].value.split(' ').includes(selector.slice(1))
-                    )
-                  )
-                })
+                let reserved = false
+                selectorParser((selectors) => {
+                  selectors.walk((selector) => {
+                    const selectorStr = String(selector)
+                    if (
+                      selectorStr.startsWith('.') &&
+                      usedClassNamesMap[selectorStr.substring(1)]
+                    ) {
+                      reserved = true
+                    }
+                  })
+                }).processSync(rule.selector, { lossless: false })
+
                 if (!reserved) {
                   rule.remove()
                 }

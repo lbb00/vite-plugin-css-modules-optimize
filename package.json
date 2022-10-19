@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-css-modules-optimize",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A css modules optimization plugin for vue",
   "main": "dist/main.js",
   "module": "src/main.js",
@@ -25,9 +25,13 @@
     "base62": "^2.0.1",
     "gogocode": "^1.0.55",
     "postcss": "^8.4.18",
-    "postcss-modules": "^5.0.0"
+    "postcss-modules": "^5.0.0",
+    "postcss-selector-parser": "^6.0.10"
   },
   "devDependencies": {
+    "eslint": "^8.25.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.7.1",
     "rollup": "^3.2.2"
   }
 }

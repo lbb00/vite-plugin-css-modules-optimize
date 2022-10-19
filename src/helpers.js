@@ -1,5 +1,8 @@
-import fs from 'fs'
+import fs from 'node:fs'
 import base62 from 'base62'
+import { cwd } from 'node:process'
+
+const currentPath = cwd()
 
 export const generateScopedNameBase62Global = (() => {
   let count = 0
@@ -57,7 +60,9 @@ export const generateScopedNameBase62Uniapp = (() => {
         .flat() || []),
     ]
 
-    return pages.find((i) => path.startsWith(__dirname + '/src/' + i + '.vue'))
+    return pages.find((i) =>
+      path.startsWith(currentPath + '/src/' + i + '.vue')
+    )
   }
   return (name, filename) => {
     const filePath = filename.split('?')[0]

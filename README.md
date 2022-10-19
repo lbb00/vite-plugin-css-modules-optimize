@@ -19,7 +19,7 @@ _Unsupported `postcss-modules` configuration:_
 - localsConvention
 - globalModulePaths
 
-## How it works?
+## How it works
 
 This plugin need to work before the VUE plugin, it will syntax analysis and conversion of VUE SFC files that use CSS modules by GoGoCode and PostCSS.
 
