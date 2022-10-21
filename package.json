@@ -4,6 +4,7 @@
   "description": "A css modules optimization plugin for vue",
   "main": "dist/main.js",
   "module": "src/main.js",
+  "type": "module",
   "scripts": {
     "build": "rollup -c"
   },
@@ -14,6 +15,7 @@
   "license": "UNLICENSE (HTTP://UNLICENSE.ORG/)",
   "keywords": [
     "css modules",
+    "css module",
     "vite",
     "uniapp"
   ],
