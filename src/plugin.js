@@ -12,7 +12,7 @@ export function cssModulesOptimizePlugin() {
     },
     async transform(code, id) {
       if (id.endsWith('.vue')) {
-        const hasCssModule = /<style.*module/.test(code)
+        const hasCssModule = /<style.*[\s,",']module[\s,>]/.test(code)
         const classNamesMap = {}
 
         if (hasCssModule) {
@@ -167,6 +167,9 @@ export function cssModulesOptimizePlugin() {
           }
 
           ast.rootNode.node.styles.forEach((i, idx) => {
+            if (!classNamesMap[idx]) {
+              return
+            }
             const usedClassNamesMap = Object.keys(
               classNamesMap[idx].map
             ).reduce((acc, i) => {
