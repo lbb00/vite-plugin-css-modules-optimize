@@ -5,8 +5,8 @@ import { cwd } from 'node:process'
 const currentPath = cwd()
 
 function base62Encode(num) {
+  // Get the shorter class name to avoid adding the prefix "_" when the num is less than 3276 and it starts with 0-9
   // Skip 0 -9, 10-9Z
-  // Don't use prefix "_" when num is less than 3276 and start with 0-9 for get a short base62 num string.
   const b62Num = base62.encode(num + (num < 52 ? 10 : 568))
   return /^[0-9]/.test(b62Num) ? `_${b62Num}` : b62Num
 }

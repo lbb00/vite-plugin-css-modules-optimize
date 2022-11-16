@@ -4,24 +4,27 @@
 [![License](https://img.shields.io/github/license/lbb00/vite-plugin-css-modules-optimize.svg)](https://github.com/lbb00/vite-plugin-css-modules-optimize/blob/master/LICENSE)
 [![NPM download times](https://img.shields.io/npm/dt/vite-plugin-css-modules-optimize.svg)](https://www.npmjs.com/package/vite-plugin-css-modules-optimize)
 
-!> Currently in testing stage, only the use of `<style module>` in VUE SFC files is supported.
+!> Currently, in the testing stage, only the use of `<style module>` in Vue SFC files is supported.
 
-> A css modules optimization plugin for vue.
+> A CSS modules optimization plugin for vite
 
-[Click here to online demo](https://codesandbox.io/s/vite-css-modules-optimize-xguhbu?file=/src/App.vue)
+[Click here to online demo on CodeSandbox](https://codesandbox.io/s/vite-css-modules-optimize-xguhbu?file=/src/App.vue)
 
-- Deleted unused css code.
-- Convert the variables in SFC template to string.
-- Compatible with the postcss-modules configuration in vite.config.js(css.modules).
+- Transform the variable of CSS modules to the string
+- Use the shorter class name by base62
+- Deleted unused CSS code
+- Compatible with the postcss-modules configuration in vite.config.js(css.modules)
 
-_Unsupported `postcss-modules` configuration:_
+In the future will support the JSX file and split your CSS class to atomically CSS.
+
+_Unsupported `postcss-modules` configurations:_
 
 - localsConvention
 - globalModulePaths
 
 ## How it works
 
-This plugin need to work before the VUE plugin, it will syntax analysis and conversion of VUE SFC files that use CSS modules by GoGoCode and PostCSS.
+This plugin should work before the Vue plugin, it will do syntax analysis and transform files that use CSS modules by GoGoCode and PostCSS.
 
 ## Usage
 
@@ -68,7 +71,7 @@ export default defineConfig({
 
 由于微信小程序默认样式规则只有当前页面样式会影响到当前页面引用的组件，组件间、父子组件默认是隔离的。
 
-所以采用页面级组件样式增加一个前缀`_`，其余组件都从 base62 `a` 开始生成样式名，以达到体积最小化。
+所以页面级组件样式增加一个前缀`-`，其余组件都从 base62 `a` 开始生成样式名，以达到体积最小化。
 
 ```javascript
 // vite.config.js
