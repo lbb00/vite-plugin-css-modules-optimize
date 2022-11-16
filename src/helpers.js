@@ -4,12 +4,19 @@ import { cwd } from 'node:process'
 
 const currentPath = cwd()
 
+function base62Encode(num) {
+  // Skip 0 -9, 10-9Z
+  // Don't use prefix "_" when num is less than 3276 and start with 0-9 for get a short base62 num string.
+  const b62Num = base62.encode(num + (num < 52 ? 10 : 568))
+  return /^[0-9]/.test(b62Num) ? `_${b62Num}` : b62Num
+}
+
 export const generateScopedNameBase62Global = (() => {
   let count = 0
   const caches = {}
 
   function toClass62(num) {
-    return base62.encode(num + 10)
+    return base62Encode(num)
   }
 
   return (name, filename) => {
@@ -47,7 +54,7 @@ export const generateScopedNameBase62Uniapp = (() => {
   const caches = {}
 
   function toClass62(num, isPage) {
-    return (isPage ? '_' : '') + base62.encode(num + 10)
+    return (isPage ? '-' : '') + base62Encode(num)
   }
 
   function isPage(path) {
