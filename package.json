@@ -4,7 +4,8 @@
   "description": "A css modules optimization plugin for vue",
   "main": "dist/main.js",
   "scripts": {
-    "build": "rollup -c"
+    "build": "rollup -c",
+    "test": "jest"
   },
   "files": [
     "dist"
