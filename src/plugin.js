@@ -8,7 +8,7 @@ export function cssModulesOptimizePlugin() {
   return {
     name: 'css-modules-optimize',
     config(config) {
-      cssModulesConfig = config.css?.modules || {}
+      cssModulesConfig = config?.css?.modules || {}
     },
     async transform(code, id) {
       if (id.endsWith('.vue')) {
@@ -36,7 +36,8 @@ export function cssModulesOptimizePlugin() {
                         i.attrs.module === true ? undefined : i.attrs.module,
                       map: Object.keys(json).reduce((acc, key) => {
                         acc[key] = {
-                          value: json[key],
+                          // if used composes, the value will be like 'a b'
+                          value: json[key].split(' '),
                         }
                         return acc
                       }, {}),
@@ -54,7 +55,6 @@ export function cssModulesOptimizePlugin() {
                 })
             })
           )
-
           let script = ast.find('<script></script>')
           if (script.length === 0) {
             script = ast.find('<script setup></script>')
@@ -165,7 +165,6 @@ export function cssModulesOptimizePlugin() {
               )
             )
           }
-
           ast.rootNode.node.styles.forEach((i, idx) => {
             if (!classNamesMap[idx]) {
               return
@@ -175,7 +174,7 @@ export function cssModulesOptimizePlugin() {
             ).reduce((acc, i) => {
               const { used, value } = classNamesMap[idx].map[i]
               if (used) {
-                acc[value] = true
+                value.forEach((v) => [(acc[v] = true)])
               }
               return acc
             }, {})
@@ -195,7 +194,6 @@ export function cssModulesOptimizePlugin() {
                     }
                   })
                 }).processSync(rule.selector, { lossless: false })
-
                 if (!reserved) {
                   rule.remove()
                 }

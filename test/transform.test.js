@@ -1,166 +1,152 @@
-const { cssModulesOptimizePlugin } = require('../dist/main.js')
+import { test, expect } from 'vitest'
+import cssModulesOptimizePlugin, {
+  generateScopedNameBase62Uniapp,
+} from '../src/main.js'
 
 const cmo = cssModulesOptimizePlugin()
 const transform = cmo.transform
-
-const input = `<template>
-<view :class="$style.red">color red, background black</view>
-<view :class="[$style1.yellow, 'foo']">color yellow, background black</view>
-<view :class="blue">color blue, fz14</view>
-<view :class="[$styleB.bar]">nothing</view>
-</template>
-
-<script setup>
-import { useCssModule, computed } from 'vue'
-const $style = useCssModule()
-const $style1 = useCssModule()
-const $styleA = useCssModule('a')
-const $styleB = useCssModule('b')
-const blue = computed(() => {
-return [$styleA.blue, $style.fz14]
+cmo.config({
+  css: {
+    modules: {
+      generateScopedName: generateScopedNameBase62Uniapp,
+    },
+  },
 })
-</script>
 
-<style>
-.foo {
-background: #000;
-}
-</style>
-
-<style module>
-.red {
-color: red;
-}
-
-.blue {
-color: blue;
-}
-.fz14 {
-font-size: 14px;
-}
-.fz16 {
-/* unused, will be deleted */
-font-size: 16px;
-}
-</style>
-
-<style module>
-.bg-black {
-background: #000;
-}
-.red {
-composes: bg-black;
-}
-.yellow {
-color: yellow;
-}
-</style>
-
-<style module="a">
-.blue {
-color: blue;
-}
-</style>
-
-</style>
-
-<style module>
-.bg-black {
-background: #000;
-}
-.red {
-composes: bg-black;
-}
-.yellow {
-color: yellow;
-}
-</style>
-
-<style module="a">
-.blue {
-color: blue;
-}
-</style>`
-
-const output = `
+test('transform vue sfc with setup', async () => {
+  const code = `
 <template>
-  <view class="_red_gjrx2_2 _red_svl8m_5 _bg-black_svl8m_2 _red_svl8m_5 _bg-black_svl8m_2">color red, background black</view>
-  <view class='_yellow_svl8m_8 _yellow_svl8m_8 foo'>color yellow, background black</view>
-  <view :class='blue'>color blue, fz14</view>
-  <view :class='[$styleB.bar]'>nothing</view>
+<div :class="$style.hello">hello</div>
+<div :class="$s1.hello">hello</div>
+<div :class="[$style.hello,$s1.hello]">hello</div>
+<div :class="['color-yellow',$style.hello,{
+    [$s1.hello]:true
+}]">hello</div>
+<div :class="$undefinedStyle.hello">hello</div>
+<div :class="$empty.hello">hello</div>
+<div :class="helloClassNames">hello</div>
 </template>
 
 <script setup>
-import { useCssModule, computed } from 'vue'
-const $style = {"fz14":"_fz14_gjrx2_9"}
-const $style1 = {}
-const $styleA = {"blue":"_blue_vycji_2 _blue_vycji_2"}
-const $styleB = useCssModule('b')
-const blue = computed(() => {
-return [$styleA.blue, $style.fz14]
-})
+const $style = useCssModule()
+const $s1 = useCssModule('s1')
+
+const helloClassNames = [$style.hello, $s1.hello].join(' ')
 </script>
 
-<style>
-.foo {
-background: #000;
+<style module>
+.hello {
+    color: red;
+}
+.unused {
+    color: blue;
 }
 </style>
 
 <style>
-._red_gjrx2_2 {
-color: red;
-}
-
-._blue_gjrx2_6 {
-color: blue;
-}
-._fz14_gjrx2_9 {
-font-size: 14px;
-}
-._fz16_gjrx2_12 {
-/* unused, will be deleted */
-font-size: 16px;
+.color-yellow{
+    color: yellow;
 }
 </style>
 
-<style>
-._bg-black_svl8m_2 {
-background: #000;
+<style module="s1" lang="scss">
+.helloAfter{
+    color: blue;
 }
-._red_svl8m_5 {
+.helloAfter::after{
+    content: 'hello';
 }
-._yellow_svl8m_8 {
-color: yellow;
-}
-</style>
 
-<style>
-._blue_vycji_2 {
-color: blue;
-}
-</style>
 
-<style>
-._bg-black_svl8m_2 {
-background: #000;
+.hello {
+    color: red;
+    composes: helloAfter;
 }
-._red_svl8m_5 {
-}
-._yellow_svl8m_8 {
-color: yellow;
-}
-</style>
 
-<style>
-._blue_vycji_2 {
-color: blue;
-}
 </style>
 `
 
-describe('transform vue SFC file', () => {
-  test('transform', async () => {
-    expect(await transform(input, 'test.vue')).toBe(output)
-  })
+  console.log(await transform(code, 'test.vue'))
+
+  const result = `
+<template>
+  <div class="a">hello</div>
+</template>
+
+<style>
+.a {
+    color: red;
+}
+</style>
+`
+  await expect(transform(code, 'test.vue')).resolves.toBe(result)
+})
+
+test('transform vue sfc with optional', async () => {
+  const code = `
+  <template>
+  <div :class="$style.hello">hello</div>
+  <div :class="$s1.hello">hello</div>
+  <div :class="[$style.hello,$s1.hello]">hello</div>
+  <div :class="['color-yellow',$style.hello,{
+      [$s1.hello]:true
+  }]">hello</div>
+  <div :class="$undefinedStyle.hello">hello</div>
+  <div :class="helloClassNames">hello</div>
+  </template>
+
+  <script>
+  export default{
+    computed(){
+        return this.$style.hellow
+    }
+  }
+
+  </script>
+
+  <style module>
+  .hello {
+      color: red;
+  }
+  .unused {
+      color: blue;
+  }
+  </style>
+
+  <style>
+  .color-yellow{
+      color: yellow;
+  }
+  </style>
+
+  <style module="s1" lang="scss">
+  .helloAfter{
+      color: blue;
+  }
+  .helloAfter::after{
+      content: 'hello';
+  }
+
+
+  .hello {
+      color: red;
+      composes: helloAfter;
+  }
+
+  </style>`
+
+  console.log(await transform(code, 'test.vue'))
+
+  const result = `
+  <template>
+    <div class="a">hello</div>
+  </template>
+
+  <style>
+  .a {
+      color: red;
+  }
+  </style>
+  `
+  await expect(transform(code, 'test.vue')).resolves.toBe(result)
 })

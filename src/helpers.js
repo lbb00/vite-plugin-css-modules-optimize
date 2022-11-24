@@ -59,7 +59,13 @@ export const generateScopedNameBase62Uniapp = (() => {
 
   function isPage(path) {
     // todo: watch file change
-    const pagesJson = JSON.parse(fs.readFileSync('./src/pages.json'))
+    let pagesJson = {
+      pages: [],
+      subPackages: [],
+    }
+    if (fs.existsSync('./src/pages.json')) {
+      pagesJson = JSON.parse(fs.readFileSync('./src/pages.json'))
+    }
     const pages = [
       ...pagesJson.pages.map((i) => i.path),
       ...(pagesJson.subPackages

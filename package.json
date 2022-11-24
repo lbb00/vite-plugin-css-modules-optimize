@@ -3,9 +3,11 @@
   "version": "0.1.4",
   "description": "A css modules optimization plugin for vue",
   "main": "dist/main.js",
+  "type": "module",
   "scripts": {
-    "build": "rollup -c",
-    "test": "jest"
+    "build": "vite build",
+    "test": "vitest",
+    "coverage": "vitest run --coverage"
   },
   "files": [
     "dist"
@@ -29,10 +31,12 @@
     "postcss-selector-parser": "^6.0.10"
   },
   "devDependencies": {
+    "@vitest/coverage-c8": "^0.25.3",
     "eslint": "^8.25.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "jest": "^29.3.1",
+    "mlly": "^1.0.0",
     "prettier": "^2.7.1",
-    "rollup": "^3.2.2"
+    "vite": "^3.2.4",
+    "vitest": "^0.25.3"
   }
 }
